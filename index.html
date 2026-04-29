@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TheSubhub Orders</title>
+
+  <!-- EmailJS -->
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+
+  <style>
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
+      color: white; 
+      padding: 20px; 
+      min-height: 100vh;
+      margin: 0;
+    }
+    h1 { 
+      color: #22c55e; 
+      text-align: center; 
+      text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+      font-size: 2.5em;
+      margin-bottom: 30px;
+    }
+    .form-container {
+      background: rgba(30, 41, 59, 0.8);
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      max-width: 800px;
+      margin: 0 auto 30px;
+    }
+    .input-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    input, select { 
+      padding: 12px; 
+      margin: 0; 
+      border-radius: 8px; 
+      border: 1px solid #374151;
+      background: #1f2937;
+      color: white;
+      width: 180px;
+      transition: all 0.3s ease;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #22c55e;
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+    }
+    button { 
+      background: linear-gradient(45deg, #22c55e, #16a34a); 
+      color: black; 
+      cursor: pointer; 
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+    }
+    .profit-container {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 30px;
+    }
+    .profit-box { 
+      padding: 15px; 
+      background: rgba(17, 24, 39, 0.8); 
+      border-radius: 10px; 
+      display: inline-block;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      min-width: 150px;
+    }
+    .profit-value { 
+      color: #22c55e; 
+      font-size: 24px; 
+      font-weight: bold;
+      display: block;
+    }
+    table { 
+      width: 100%; 
+      margin-top: 20px; 
+      border-collapse: collapse;
+      background: rgba(30, 41, 59, 0.8);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    th, td { 
+      padding: 15px; 
+      border-bottom: 1px solid #374151;
+      text-align: center;
+    }
+    th { 
+      color: #22c55e;
+      background: rgba(34, 197, 94, 0.1);
+      font-weight: bold;
+    }
+    tr:hover {
+      background: rgba(34, 197, 94, 0.05);
+    }
+    .status-active { color: #22c55e; }
+    .status-expiring { color: #f59e0b; }
+    .status-expired { color: #ef4444; }
+  </style>
+</head>
+
+<body>
+
+<h1>TheSubhub Order Tracker</h1>
+
+<div class="form-container">
+  <div class="input-group">
+    <input id="name" placeholder="Customer" />
+    <select id="product">
+      <option value="">Select Product</option>
+      <option value="Netflix">Netflix</option>
+      <option value="Spotify">Spotify</option>
+      <option value="ChatGPT">ChatGPT</option>
+      <option value="YouTube Premium">YouTube Premium</option>
+      <option value="Minecraft">Minecraft</option>
+      <option value="Steam Game">Steam Game</option>
+      <option value="Mobile Legends Bang Bang Diamond">MLBB Diamond</option>
+      <option value="PUBG UC">PUBG UC</option>
+      <option value="eFootball">eFootball</option>
+      <option value="Discord Nitro">Discord Nitro</option>
+    </select>
+    <input id="cost" placeholder="Your Cost" oninput="calcProfit()" />
+    <input id="sell" placeholder="Customer Price" oninput="calcProfit()" />
+    <select id="duration" onchange="setExpiry()">
+      <option value="">Select Duration</option>
+      <option value="1">1 Month</option>
+      <option value="2">2 Months</option>
+      <option value="3">3 Months</option>
+      <option value="6">6 Months</option>
+      <option value="12">1 Year</option>
+    </select>
+    <input type="date" id="endDate" />
+  </div>
+  <div style="text-align: center; margin-bottom: 20px;">
+    <button onclick="addOrder()">Add Order</button>
+    <button onclick="testNotification()">Test Notification</button>
+  </div>
+</div>
+
+<div class="profit-container">
+  <div class="profit-box">
+    Profit Preview: <span class="profit-value" id="profitPreview">0</span>
+  </div>
+  <div class="profit-box">
+    Total Profit: <span class="profit-value" id="totalProfit">0</span>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Product</th>
+      <th>Cost</th>
+      <th>Sell</th>
+      <th>Profit</th>
+      <th>Duration</th>
+      <th>Expiry</th>
+      <th>Days Left</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody id="orders"></tbody>
+</table>
+
+<script>
+emailjs.init("YOUR_PUBLIC_KEY"); // replace
+
+let orders = JSON.parse(localStorage.getItem('orders')) || [];
+
+async function fetchOrdersFromServer() {
+  try {
+    const res = await fetch('/api/orders');
+    if (!res.ok) {
+      console.error('Could not load orders from server', res.statusText);
+      return;
+    }
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      orders = data.map(row => ({
+        name: row.name,
+        product: row.product,
+        cost: Number(row.cost) || 0,
+        sell: Number(row.sell) || 0,
+        endDate: row.end_date || row.endDate,
+        durationLabel: row.duration_label || row.durationLabel || '',
+        notified: row.notified || false
+      }));
+      save();
+    }
+  } catch (err) {
+    console.error('Fetch error', err);
+  }
+}
+
+async function saveOrderToServer(order) {
+  try {
+    const res = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(order)
+    });
+    if (!res.ok) {
+      console.error('Save order failed', await res.text());
+    }
+  } catch (err) {
+    console.error('Save error', err);
+  }
+}
+
+// Ask notification permission
+if (Notification.permission !== "granted") {
+  Notification.requestPermission();
+}
+
+const costEl = () => document.getElementById('cost');
+const sellEl = () => document.getElementById('sell');
+
+function save() {
+  localStorage.setItem('orders', JSON.stringify(orders));
+}
+
+function calcProfit() {
+  const cost = parseFloat(costEl().value) || 0;
+  const sell = parseFloat(sellEl().value) || 0;
+  document.getElementById('profitPreview').innerText = sell - cost;
+}
+
+function setExpiry() {
+  const months = parseInt(document.getElementById('duration').value);
+  if (!months) return;
+  const d = new Date();
+  d.setMonth(d.getMonth() + months);
+  document.getElementById('endDate').value = d.toISOString().split('T')[0];
+}
+
+function calculateTotalProfit() {
+  let total = 0;
+  orders.forEach(o => total += (o.sell - o.cost) || 0);
+  document.getElementById('totalProfit').innerText = total;
+}
+
+function notifyUser(o) {
+  if (Notification.permission === "granted") {
+    new Notification("Subscription Expiring", {
+      body: `${o.product} for ${o.name} expires soon!`
+    });
+  }
+}
+
+function sendDiscord(embed) {
+  fetch('https://discordapp.com/api/webhooks/1499068739620962467/D1L5NZgNnzMR7ivASTeGYKMTUopTamDOIHUViD46eTFZEx-g9av3arYXTDbAp7gqncKX', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(embed)
+  });
+}
+
+function getDaysLeft(endDate) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiry = new Date(endDate);
+  expiry.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+  return diffDays;
+}
+
+function getDaysLeftLabel(endDate) {
+  const days = getDaysLeft(endDate);
+  if (days < 0) return `${Math.abs(days)} days ago`;
+  return `${days} day${days === 1 ? '' : 's'}`;
+}
+
+function checkExpiry(o) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiry = new Date(o.endDate);
+  expiry.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+
+  if (diffDays <= 3 && diffDays >= 0 && !o.notified) {
+    notifyUser(o);
+    sendDiscord({
+      embeds: [{
+        title: "Subscription Expiring Soon",
+        color: 16776960,
+        fields: [
+          { name: "Customer", value: o.name, inline: true },
+          { name: "Product", value: o.product, inline: true },
+          { name: "Expires", value: o.endDate, inline: true },
+          { name: "Days Left", value: String(diffDays), inline: true }
+        ],
+        footer: { text: "⚠️ Subscription expiring soon" }
+      }]
+    });
+    o.notified = true;
+    save();
+  }
+
+  if (diffDays <= 3 && diffDays >= 0) return { text: "⚠️ Expiring Soon", class: "status-expiring" };
+  if (diffDays < 0) return { text: "❌ Expired", class: "status-expired" };
+  return { text: "Active", class: "status-active" };
+}
+
+function render() {
+  const tbody = document.getElementById('orders');
+  tbody.innerHTML = '';
+
+  orders.forEach((o,i)=>{
+    const profit = (o.sell - o.cost) || 0;
+    const statusObj = checkExpiry(o);
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${o.name}</td>
+        <td>${o.product}</td>
+        <td>${o.cost}</td>
+        <td>${o.sell}</td>
+        <td>${profit}</td>
+        <td>${o.durationLabel}</td>
+        <td>${o.endDate}</td>
+        <td>${getDaysLeftLabel(o.endDate)}</td>
+        <td class="${statusObj.class}">${statusObj.text}</td>
+        <td><button onclick="del(${i})">Delete</button></td>
+      </tr>`;
+  });
+
+  calculateTotalProfit();
+}
+
+function sendEmail(order) {
+  emailjs.send("YOUR_SERVICE_ID","YOUR_TEMPLATE_ID",{
+    to_email: "retrygede@gmail.com",
+    name: order.name,
+    product: order.product,
+    price: order.sell,
+    expiry: order.endDate
+  });
+}
+
+function addOrder() {
+  const name = document.getElementById('name').value;
+  const product = document.getElementById('product').value;
+  const cost = parseFloat(costEl().value)||0;
+  const sell = parseFloat(sellEl().value)||0;
+  const endDate = document.getElementById('endDate').value;
+
+  const durationLabel = document.getElementById('duration').selectedOptions[0].text;
+
+  if (!name || !product || !endDate) return alert('Fill details');
+
+  const order = { name, product, cost, sell, endDate, durationLabel, notified:false };
+
+  orders.push(order);
+  save();
+  render();
+  sendEmail(order);
+  saveOrderToServer(order);
+}
+
+function testNotification() {
+  const testOrder = {
+    name: "Test User",
+    product: "Test Subscription",
+    endDate: new Date(Date.now() + 2*24*60*60*1000).toISOString().split('T')[0]
+  };
+
+  notifyUser(testOrder);
+}
+
+function del(i){
+  orders.splice(i,1);
+  save();
+  render();
+}
+
+async function init() {
+  await fetchOrdersFromServer();
+  render();
+}
+
+setInterval(render,60000);
+
+init();
+</script>
+
+</body>
+</html>
