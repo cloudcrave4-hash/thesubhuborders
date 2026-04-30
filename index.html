@@ -209,7 +209,7 @@
     </select>
     <input id="cost" placeholder="Your Cost" oninput="calcProfit()" />
     <input id="sell" placeholder="Customer Price" oninput="calcProfit()" />
-    <select id="duration" onchange="setExpiry()">
+    <select id="duration">
       <option value="">Select Duration</option>
       <option value="1">1 Month</option>
       <option value="2">2 Months</option>
@@ -324,14 +324,6 @@ function calcProfit() {
   const cost = parseFloat(costEl().value) || 0;
   const sell = parseFloat(sellEl().value) || 0;
   document.getElementById('profitPreview').innerText = sell - cost;
-}
-
-function setExpiry() {
-  const months = parseInt(document.getElementById('duration').value);
-  if (!months) return;
-  const d = new Date();
-  d.setMonth(d.getMonth() + months);
-  document.getElementById('endDate').value = d.toISOString().split('T')[0];
 }
 
 function calculateTotalProfit() {
