@@ -134,6 +134,8 @@
       input, select {
         width: 100%;
         max-width: 280px;
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 15px; /* Larger touch target */
       }
       .profit-container {
         flex-direction: column;
@@ -160,6 +162,26 @@
         left: 0;
         background: rgba(30, 41, 59, 0.95);
         z-index: 1;
+      }
+      button {
+        width: 100%;
+        max-width: 280px;
+        padding: 15px 24px;
+        font-size: 16px;
+        -webkit-tap-highlight-color: transparent;
+      }
+      button:active {
+        transform: scale(0.98);
+      }
+      .button-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      .button-group button {
+        width: 100%;
+        max-width: 280px;
       }
     }
   </style>
@@ -197,7 +219,7 @@
     </select>
     <input type="date" id="endDate" />
   </div>
-  <div style="text-align: center; margin-bottom: 20px;">
+  <div class="button-group" style="text-align: center; margin-bottom: 20px;">
     <button onclick="addOrder()">Add Order</button>
     <button onclick="testNotification()">Test Notification</button>
   </div>
@@ -413,28 +435,43 @@ function sendEmail(order) {
 }
 
 function addOrder() {
-  const name = document.getElementById('name').value;
+  const name = document.getElementById('name').value.trim();
   const product = document.getElementById('product').value;
   const cost = parseFloat(costEl().value)||0;
   const sell = parseFloat(sellEl().value)||0;
   const endDate = document.getElementById('endDate').value;
 
-  const durationLabel = document.getElementById('duration').selectedOptions[0].text;
+  const durationLabel = document.getElementById('duration').selectedOptions[0]?.text || '';
 
-  if (!name || !product || !endDate) return alert('Fill details');
+  if (!name || !product || !endDate) {
+    alert('Please fill in all required fields: Customer, Product, and Expiry Date');
+    return;
+  }
 
   const order = { name, product, cost, sell, endDate, durationLabel, notified:false };
 
+  // Add to local list first (works offline)
   orders.push(order);
   save();
   render();
   sendEmail(order);
+  
+  // Then sync to server
   saveOrderToServer(order).then(serverId => {
     if (serverId) {
       order.id = serverId;
       save();
     }
   });
+  
+  // Clear form
+  document.getElementById('name').value = '';
+  document.getElementById('product').value = '';
+  costEl().value = '';
+  sellEl().value = '';
+  document.getElementById('duration').value = '';
+  document.getElementById('endDate').value = '';
+  document.getElementById('profitPreview').innerText = '0';
 }
 
 function testNotification() {
