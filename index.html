@@ -315,6 +315,30 @@ if ('Notification' in window && Notification.permission !== "granted") {
 
 const costEl = () => document.getElementById('cost');
 const sellEl = () => document.getElementById('sell');
+const endDateEl = () => document.getElementById('endDate');
+
+function formatDateString(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateString(dateString) {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function addMonthsToDate(dateString, monthsToAdd) {
+  const source = parseDateString(dateString);
+  const targetMonth = source.getMonth() + monthsToAdd;
+  const targetYear = source.getFullYear() + Math.floor(targetMonth / 12);
+  const normalizedMonth = ((targetMonth % 12) + 12) % 12;
+  const lastDayOfTargetMonth = new Date(targetYear, normalizedMonth + 1, 0).getDate();
+  const targetDay = Math.min(source.getDate(), lastDayOfTargetMonth);
+
+  return formatDateString(new Date(targetYear, normalizedMonth, targetDay));
+}
 
 function save() {
   localStorage.setItem('orders', JSON.stringify(orders));
@@ -430,14 +454,17 @@ function addOrder() {
   const product = document.getElementById('product').value;
   const cost = parseFloat(costEl().value)||0;
   const sell = parseFloat(sellEl().value)||0;
-  const endDate = document.getElementById('endDate').value;
+  const selectedDate = endDateEl().value;
+  const selectedMonths = parseInt(document.getElementById('duration').value, 10) || 0;
 
   const durationLabel = document.getElementById('duration').selectedOptions[0]?.text || '';
 
-  if (!name || !product || !endDate) {
-    alert('Please fill in all required fields: Customer, Product, and Expiry Date');
+  if (!name || !product || !selectedDate) {
+    alert('Please fill in all required fields: Customer, Product, and Date');
     return;
   }
+
+  const endDate = selectedMonths ? addMonthsToDate(selectedDate, selectedMonths) : selectedDate;
 
   const order = { name, product, cost, sell, endDate, durationLabel, notified:false };
 
@@ -461,7 +488,7 @@ function addOrder() {
   costEl().value = '';
   sellEl().value = '';
   document.getElementById('duration').value = '';
-  document.getElementById('endDate').value = '';
+  endDateEl().value = '';
   document.getElementById('profitPreview').innerText = '0';
 }
 
