@@ -342,14 +342,17 @@ function notifyUser(o) {
   }
 }
 
-function sendDiscord(embed) {
-  fetch('https://discordapp.com/api/webhooks/1499068739620962467/D1L5NZgNnzMR7ivASTeGYKMTUopTamDOIHUViD46eTFZEx-g9av3arYXTDbAp7gqncKX', {
+function sendExpiryNotification(order, daysLeft) {
+  fetch('/api/notify', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(embed)
-  });
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: order.name,
+      product: order.product,
+      endDate: order.endDate,
+      daysLeft
+    })
+  }).catch(err => console.error('Notification error', err));
 }
 
 function getDaysLeft(endDate) {
@@ -376,19 +379,7 @@ function checkExpiry(o) {
 
   if (diffDays <= 3 && diffDays >= 0 && !o.notified) {
     notifyUser(o);
-    sendDiscord({
-      embeds: [{
-        title: "Subscription Expiring Soon",
-        color: 16776960,
-        fields: [
-          { name: "Customer", value: o.name, inline: true },
-          { name: "Product", value: o.product, inline: true },
-          { name: "Expires", value: o.endDate, inline: true },
-          { name: "Days Left", value: String(diffDays), inline: true }
-        ],
-        footer: { text: "⚠️ Subscription expiring soon" }
-      }]
-    });
+    sendExpiryNotification(o, diffDays);
     o.notified = true;
     save();
   }
