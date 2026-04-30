@@ -115,6 +115,53 @@
     .status-active { color: #22c55e; }
     .status-expiring { color: #f59e0b; }
     .status-expired { color: #ef4444; }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      h1 {
+        font-size: 1.5em;
+      }
+      .form-container {
+        padding: 15px;
+      }
+      .input-group {
+        flex-direction: column;
+        align-items: center;
+      }
+      input, select {
+        width: 100%;
+        max-width: 280px;
+      }
+      .profit-container {
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+      }
+      .profit-box {
+        width: 100%;
+        max-width: 280px;
+      }
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+      }
+      th, td {
+        padding: 10px 8px;
+        font-size: 12px;
+        min-width: 80px;
+      }
+      th:first-child, td:first-child {
+        position: sticky;
+        left: 0;
+        background: rgba(30, 41, 59, 0.95);
+        z-index: 1;
+      }
+    }
   </style>
 </head>
 
@@ -198,6 +245,7 @@ async function fetchOrdersFromServer() {
     const data = await res.json();
     if (Array.isArray(data)) {
       orders = data.map(row => ({
+        id: row.id,
         name: row.name,
         product: row.product,
         cost: Number(row.cost) || 0,
@@ -222,9 +270,13 @@ async function saveOrderToServer(order) {
     });
     if (!res.ok) {
       console.error('Save order failed', await res.text());
+      return null;
     }
+    const data = await res.json();
+    return data && data[0] ? data[0].id : null;
   } catch (err) {
     console.error('Save error', err);
+    return null;
   }
 }
 
@@ -377,7 +429,12 @@ function addOrder() {
   save();
   render();
   sendEmail(order);
-  saveOrderToServer(order);
+  saveOrderToServer(order).then(serverId => {
+    if (serverId) {
+      order.id = serverId;
+      save();
+    }
+  });
 }
 
 function testNotification() {
@@ -391,9 +448,26 @@ function testNotification() {
 }
 
 function del(i){
+  const order = orders[i];
+  if (order && order.id) {
+    deleteOrderFromServer(order.id);
+  }
   orders.splice(i,1);
   save();
   render();
+}
+
+async function deleteOrderFromServer(orderId) {
+  try {
+    const res = await fetch(`/api/orders?id=${orderId}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) {
+      console.error('Delete order failed', await res.text());
+    }
+  } catch (err) {
+    console.error('Delete error', err);
+  }
 }
 
 async function init() {

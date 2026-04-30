@@ -43,6 +43,35 @@ export default async function handler(req, res) {
     return res.status(201).json(data);
   }
 
-  res.setHeader('Allow', ['GET', 'POST']);
+  if (req.method === 'DELETE') {
+    const { id } = req.query;
+    
+    if (!id) {
+      return res.status(400).json({ error: 'Order ID is required' });
+    }
+
+    const { data: checkData, error: checkError } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('id', id)
+      .single();
+
+    if (checkError || !checkData) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const { error: deleteError } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      return res.status(500).json({ error: deleteError.message });
+    }
+
+    return res.status(200).json({ message: 'Order deleted successfully' });
+  }
+
+  res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
   res.status(405).end('Method Not Allowed');
 }
