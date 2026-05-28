@@ -59,11 +59,13 @@ const authenticateToken = (req, res, next) => {
 // Simple in-memory user store (use Supabase users table in production)
 const users = new Map();
 
-// Load demo user (remove in production, use real user management)
-users.set('admin', {
-  email: 'admin@example.com',
-  passwordHash: await bcryptjs.hash('retrygede', 10)
-});
+// Initialize users
+async function initializeUsers() {
+  users.set('admin', {
+    email: 'admin@example.com',
+    passwordHash: await bcryptjs.hash('retrygede', 10)
+  });
+}
 
 // Auth Routes
 app.post('/api/auth/register', async (req, res) => {
@@ -204,6 +206,10 @@ app.delete('/api/orders', authenticateToken, async (req, res) => {
 });
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+
+(async () => {
+  await initializeUsers();
+  app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
+  });
+})();
