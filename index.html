@@ -191,11 +191,6 @@
 
 <h1>TheSubhub Order Tracker</h1>
 
-<div style="text-align: right; margin-bottom: 20px;">
-  <span id="userGreeting" style="color: #cbd5e1; margin-right: 20px;"></span>
-  <button id="logoutBtn" onclick="logout()" style="background: #ef4444; padding: 10px 20px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold;">Logout</button>
-</div>
-
 <div class="form-container">
   <div class="input-group">
     <input id="name" placeholder="Customer" />
@@ -258,42 +253,6 @@
 </table>
 
 <script>
-// Authentication & Security
-function checkAuth() {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    window.location.href = '/login.html';
-    return;
-  }
-}
-
-function logout() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('username');
-  localStorage.removeItem('orders');
-  window.location.href = '/login.html';
-}
-
-function getAuthHeaders() {
-  const token = localStorage.getItem('token');
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
-  };
-}
-
-function updateUserGreeting() {
-  const username = localStorage.getItem('username');
-  if (username) {
-    document.getElementById('userGreeting').textContent = `Welcome, ${username}!`;
-  }
-}
-
-// Run auth check on page load
-checkAuth();
-updateUserGreeting();
-
-// Rest of the script...
 const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
 const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
 const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
@@ -306,14 +265,8 @@ let orders = JSON.parse(localStorage.getItem('orders')) || [];
 
 async function fetchOrdersFromServer() {
   try {
-    const res = await fetch('/api/orders', {
-      headers: getAuthHeaders()
-    });
+    const res = await fetch('/api/orders');
     if (!res.ok) {
-      if (res.status === 401 || res.status === 403) {
-        logout();
-        return;
-      }
       console.error('Could not load orders from server', res.statusText);
       return;
     }
@@ -340,14 +293,10 @@ async function saveOrderToServer(order) {
   try {
     const res = await fetch('/api/orders', {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(order)
     });
     if (!res.ok) {
-      if (res.status === 401 || res.status === 403) {
-        logout();
-        return null;
-      }
       console.error('Save order failed', await res.text());
       return null;
     }
@@ -418,7 +367,7 @@ function notifyUser(o) {
 function sendExpiryNotification(order, daysLeft) {
   fetch('/api/notify', {
     method: 'POST',
-    headers: getAuthHeaders(),
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name: order.name,
       product: order.product,
@@ -566,14 +515,9 @@ function del(i){
 async function deleteOrderFromServer(orderId) {
   try {
     const res = await fetch(`/api/orders?id=${orderId}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders()
+      method: 'DELETE'
     });
     if (!res.ok) {
-      if (res.status === 401 || res.status === 403) {
-        logout();
-        return;
-      }
       console.error('Delete order failed', await res.text());
     }
   } catch (err) {
