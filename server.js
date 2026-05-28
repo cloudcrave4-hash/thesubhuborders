@@ -37,7 +37,6 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
 
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
@@ -67,7 +66,7 @@ async function initializeUsers() {
   });
 }
 
-// Auth Routes
+// Public Auth Routes (BEFORE static files)
 app.post('/api/auth/register', async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -112,6 +111,9 @@ app.post('/api/auth/login', async (req, res) => {
     return res.status(500).json({ error: 'Login failed' });
   }
 });
+
+// Serve static files (AFTER API routes)
+app.use(express.static(path.join(__dirname)));
 
 // Protected API Routes
 app.get('/api/orders', authenticateToken, async (req, res) => {
