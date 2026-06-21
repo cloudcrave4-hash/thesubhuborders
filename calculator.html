@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iOS Calculator</title>
+<style>
+  body {
+    background-color: #000;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  .calculator-container {
+    width: 320px;
+    background-color: #000;
+    padding: 20px;
+    border-radius: 40px;
+    box-shadow: 0 0 20px rgba(255,255,255,0.1);
+  }
+  .display {
+    font-size: 70px;
+    font-weight: 300;
+    text-align: right;
+    margin-bottom: 20px;
+    padding: 0 10px;
+    word-wrap: break-word;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .keypad {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  button {
+    border: none;
+    border-radius: 50%;
+    width: 65px;
+    height: 65px;
+    font-size: 28px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: filter 0.1s;
+  }
+  .btn-gray {
+    background-color: #a5a5a5;
+    color: #000;
+  }
+  .btn-dark {
+    background-color: #333333;
+    color: #fff;
+  }
+  .btn-orange {
+    background-color: #ff9f0a;
+    color: #fff;
+    font-size: 36px;
+  }
+  .btn-zero {
+    grid-column: span 2;
+    width: 100%;
+    border-radius: 35px;
+    justify-content: flex-start;
+    padding-left: 25px;
+  }
+  button:active {
+    filter: brightness(1.5);
+  }
+  .btn-gray:active {
+    filter: brightness(0.8);
+  }
+</style>
+</head>
+<body>
+
+<div class="calculator-container">
+
+  <div class="exchange-container" style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+    <select id="currency-select" style="background: #333; color: white; border: none; border-radius: 15px; padding: 5px 10px; outline: none;">
+      <option value="EUR">EUR (€)</option>
+      <option value="GBP">GBP (£)</option>
+      <option value="JPY">JPY (¥)</option>
+      <option value="CAD">CAD ($)</option>
+      <option value="AUD">AUD ($)</option>
+    </select>
+    <button id="btn-convert" style="background: #ff9f0a; color: white; border: none; border-radius: 15px; padding: 5px 15px; width: auto; height: auto; font-size: 14px; border-radius: 20px;">USD to Target</button>
+  </div>
+
+  <div class="display" id="display">0</div>
+
+  <div class="keypad">
+    <button class="btn-gray" id="btn-ac">AC</button>
+    <button class="btn-gray" id="btn-sign">+/-</button>
+    <button class="btn-gray" id="btn-percent">%</button>
+    <button class="btn-orange" id="btn-divide">÷</button>
+
+    <button class="btn-dark" id="btn-7">7</button>
+    <button class="btn-dark" id="btn-8">8</button>
+    <button class="btn-dark" id="btn-9">9</button>
+    <button class="btn-orange" id="btn-multiply">×</button>
+
+    <button class="btn-dark" id="btn-4">4</button>
+    <button class="btn-dark" id="btn-5">5</button>
+    <button class="btn-dark" id="btn-6">6</button>
+    <button class="btn-orange" id="btn-subtract">−</button>
+
+    <button class="btn-dark" id="btn-1">1</button>
+    <button class="btn-dark" id="btn-2">2</button>
+    <button class="btn-dark" id="btn-3">3</button>
+    <button class="btn-orange" id="btn-add">+</button>
+
+    <button class="btn-dark btn-zero" id="btn-0">0</button>
+    <button class="btn-dark" id="btn-decimal">.</button>
+    <button class="btn-orange" id="btn-equals">=</button>
+  </div>
+</div>
+
+<script>
+  let currentVal = '0';
+  let previousVal = null;
+  let operation = null;
+  let resetDisplayOnNextDigit = false;
+
+  const display = document.getElementById('display');
+  const btnAc = document.getElementById('btn-ac');
+
+  function updateDisplay() {
+    // Basic formatting: if it has more than 9 chars, we might want to trim, but let's keep it simple
+    let displayStr = currentVal;
+    if (displayStr.length > 10) {
+      displayStr = displayStr.substring(0, 10);
+    }
+    display.textContent = displayStr;
+
+    // Update AC button text to C if we have entered a value
+    if (currentVal !== '0' || previousVal !== null) {
+      btnAc.textContent = 'C';
+    } else {
+      btnAc.textContent = 'AC';
+    }
+  }
+
+  function handleDigit(digit) {
+    if (resetDisplayOnNextDigit) {
+      currentVal = digit;
+      resetDisplayOnNextDigit = false;
+    } else {
+      if (currentVal === '0') {
+        currentVal = digit;
+      } else {
+        currentVal += digit;
+      }
+    }
+    updateDisplay();
+  }
+
+  function handleOperator(op) {
+    if (operation !== null && !resetDisplayOnNextDigit) {
+      calculate();
+    }
+    previousVal = currentVal;
+    operation = op;
+    resetDisplayOnNextDigit = true;
+  }
+
+  function calculate() {
+    if (operation === null || previousVal === null) return;
+
+    let a = parseFloat(previousVal);
+    let b = parseFloat(currentVal);
+    let result = 0;
+
+    switch (operation) {
+      case '+': result = a + b; break;
+      case '-': result = a - b; break;
+      case '*': result = a * b; break;
+      case '/':
+        if (b === 0) {
+          result = 'Error';
+        } else {
+          result = a / b;
+        }
+        break;
+    }
+
+    currentVal = result.toString();
+    previousVal = null;
+    operation = null;
+    resetDisplayOnNextDigit = true;
+    updateDisplay();
+  }
+
+  // Event Listeners for Digits
+  document.getElementById('btn-0').addEventListener('click', () => handleDigit('0'));
+  document.getElementById('btn-1').addEventListener('click', () => handleDigit('1'));
+  document.getElementById('btn-2').addEventListener('click', () => handleDigit('2'));
+  document.getElementById('btn-3').addEventListener('click', () => handleDigit('3'));
+  document.getElementById('btn-4').addEventListener('click', () => handleDigit('4'));
+  document.getElementById('btn-5').addEventListener('click', () => handleDigit('5'));
+  document.getElementById('btn-6').addEventListener('click', () => handleDigit('6'));
+  document.getElementById('btn-7').addEventListener('click', () => handleDigit('7'));
+  document.getElementById('btn-8').addEventListener('click', () => handleDigit('8'));
+  document.getElementById('btn-9').addEventListener('click', () => handleDigit('9'));
+
+  // Decimal
+  document.getElementById('btn-decimal').addEventListener('click', () => {
+    if (resetDisplayOnNextDigit) {
+      currentVal = '0.';
+      resetDisplayOnNextDigit = false;
+    } else if (!currentVal.includes('.')) {
+      currentVal += '.';
+    }
+    updateDisplay();
+  });
+
+  // Operators
+  document.getElementById('btn-add').addEventListener('click', () => handleOperator('+'));
+  document.getElementById('btn-subtract').addEventListener('click', () => handleOperator('-'));
+  document.getElementById('btn-multiply').addEventListener('click', () => handleOperator('*'));
+  document.getElementById('btn-divide').addEventListener('click', () => handleOperator('/'));
+
+  // Equals
+  document.getElementById('btn-equals').addEventListener('click', calculate);
+
+  // AC / C
+  btnAc.addEventListener('click', () => {
+    if (btnAc.textContent === 'C') {
+      currentVal = '0';
+      updateDisplay();
+    } else {
+      currentVal = '0';
+      previousVal = null;
+      operation = null;
+      updateDisplay();
+    }
+  });
+
+  // Sign (+/-)
+  document.getElementById('btn-sign').addEventListener('click', () => {
+    if (currentVal !== '0' && currentVal !== 'Error') {
+      if (currentVal.startsWith('-')) {
+        currentVal = currentVal.substring(1);
+      } else {
+        currentVal = '-' + currentVal;
+      }
+      updateDisplay();
+    }
+  });
+
+  // Percent
+  document.getElementById('btn-percent').addEventListener('click', () => {
+    if (currentVal !== 'Error') {
+      currentVal = (parseFloat(currentVal) / 100).toString();
+      updateDisplay();
+    }
+  });
+
+  // USD to Target Conversion
+  document.getElementById('btn-convert').addEventListener('click', async () => {
+    if (currentVal === 'Error' || currentVal === '0') return;
+
+    const targetCurrency = document.getElementById('currency-select').value;
+    const btnConvert = document.getElementById('btn-convert');
+    const originalText = btnConvert.textContent;
+
+    btnConvert.textContent = '...';
+    btnConvert.disabled = true;
+
+    try {
+      const response = await fetch('https://open.er-api.com/v6/latest/USD');
+      if (!response.ok) throw new Error('Network response was not ok');
+
+      const data = await response.json();
+      const rate = data.rates[targetCurrency];
+
+      if (rate) {
+        let amount = parseFloat(currentVal);
+        let converted = amount * rate;
+
+        // Format to 2 decimal places if there are decimals
+        if (converted % 1 !== 0) {
+          currentVal = converted.toFixed(2);
+        } else {
+          currentVal = converted.toString();
+        }
+
+        resetDisplayOnNextDigit = true;
+        updateDisplay();
+      } else {
+        currentVal = 'Error';
+        updateDisplay();
+      }
+    } catch (error) {
+      console.error('Error fetching exchange rate:', error);
+      currentVal = 'Error';
+      updateDisplay();
+    } finally {
+      btnConvert.textContent = originalText;
+      btnConvert.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
