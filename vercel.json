@@ -2,5 +2,9 @@
   "rewrites": [
     { "source": "/api/orders", "destination": "/api/orders.js" },
     { "source": "/api/notify", "destination": "/api/notify.js" }
+  ],
+  "redirects": [
+    { "source": "/login.html", "destination": "/", "permanent": true },
+    { "source": "/login", "destination": "/", "permanent": true }
   ]
 }
