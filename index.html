@@ -263,6 +263,62 @@ if (emailNotificationsEnabled) {
 
 let orders = JSON.parse(localStorage.getItem('orders')) || [];
 
+function normalizeOrder(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    product: row.product,
+    cost: Number(row.cost) || 0,
+    sell: Number(row.sell) || 0,
+    endDate: row.end_date || row.endDate,
+    durationLabel: row.duration_label || row.durationLabel || '',
+    notified: row.notified || false
+  };
+}
+
+function mergeOrdersFromServer(serverRows) {
+  if (!Array.isArray(serverRows)) {
+    return;
+  }
+
+  const existingOrders = [...orders];
+  const byId = new Map();
+
+  existingOrders.forEach(order => {
+    if (order.id) {
+      byId.set(order.id, order);
+    }
+  });
+
+  serverRows.forEach(row => {
+    const normalized = normalizeOrder(row);
+
+    if (normalized.id && byId.has(normalized.id)) {
+      const index = orders.findIndex(order => order.id === normalized.id);
+      if (index >= 0) {
+        orders[index] = { ...orders[index], ...normalized };
+      }
+      return;
+    }
+
+    const duplicateIndex = orders.findIndex(order =>
+      order.name === normalized.name &&
+      order.product === normalized.product &&
+      order.endDate === normalized.endDate &&
+      order.sell === normalized.sell &&
+      order.cost === normalized.cost
+    );
+
+    if (duplicateIndex >= 0) {
+      orders[duplicateIndex] = { ...orders[duplicateIndex], ...normalized };
+    } else {
+      orders.push(normalized);
+    }
+  });
+
+  save();
+}
+
 async function fetchOrdersFromServer() {
   try {
     const res = await fetch('/api/orders');
@@ -270,20 +326,9 @@ async function fetchOrdersFromServer() {
       console.error('Could not load orders from server', res.statusText);
       return;
     }
+
     const data = await res.json();
-    if (Array.isArray(data)) {
-      orders = data.map(row => ({
-        id: row.id,
-        name: row.name,
-        product: row.product,
-        cost: Number(row.cost) || 0,
-        sell: Number(row.sell) || 0,
-        endDate: row.end_date || row.endDate,
-        durationLabel: row.duration_label || row.durationLabel || '',
-        notified: row.notified || false
-      }));
-      save();
-    }
+    mergeOrdersFromServer(data);
   } catch (err) {
     console.error('Fetch error', err);
   }
@@ -477,8 +522,12 @@ function addOrder() {
   // Then sync to server
   saveOrderToServer(order).then(serverId => {
     if (serverId) {
-      order.id = serverId;
-      save();
+      const index = orders.findIndex(existing => existing === order);
+      if (index >= 0) {
+        orders[index] = { ...orders[index], id: serverId };
+        save();
+        render();
+      }
     }
   });
   
