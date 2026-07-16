@@ -52,10 +52,10 @@ git push -u origin main
 npm install -g vercel
 ```
 
-2. Login:
+2. Deploy:
 
 ```bash
-vercel login
+vercel --prod
 ```
 
 3. Add environment variables:
